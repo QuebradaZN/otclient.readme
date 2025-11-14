@@ -46,7 +46,7 @@
               >
                 <div
                   *for="local item in (self.fusion.currentList or {})"
-                  onclick="self.fusion:handleSelect(item)"
+                  onclick="self.fusion.handleSelect(item)"
                   onhover="self:handleDescription('fusion-select-item')"
                 >
                   <div
@@ -265,7 +265,7 @@
                     <button
                       class="fusion-buttons-improve"
                       *image-clip="self.fusion.chanceImprovedButtonClip"
-                      onclick="self.fusion:exaltedCoreImprovements('improve-chance')"
+                      onclick="self.fusion.exaltedCoreImprovements('improve-chance')"
                       *disabled="self.currentExaltedCores <= 0 or self.fusion.reduceTierLossChecked and self.currentExaltedCores == 1"
                     >
                       Improve to 65%
@@ -299,7 +299,7 @@
                     <button
                       class="fusion-buttons-improve"
                       *image-clip="self.fusion.reduceTierLossButtonClip"
-                      onclick="self.fusion:exaltedCoreImprovements('reduce-loss')"
+                      onclick="self.fusion.exaltedCoreImprovements('reduce-loss')"
                       style="width: 98px"
                       *disabled="self.currentExaltedCores <= 0 or self.fusion.chanceImprovedChecked and self.currentExaltedCores == 1"
                     >
@@ -439,7 +439,7 @@
               >
                 <div
                   *for="local item in (self.transfer.currentList.donors or {})"
-                  onclick="self.transfer:handleSelect(item)"
+                  onclick="self.transfer.handleSelect(item)"
                 >
                   <div
                     class="item-to-select"
@@ -773,7 +773,7 @@
                 <div
                   class="conversion-column-item-conversion-button"
                   *disabled="self.conversion.disableDustConversion"
-                  onclick="self.conversion:toggle(2)"
+                  onclick="self.conversion.toggle(2)"
                   onhover="self:handleDescription('convert-dust-cost')"
                 >
                   <UIItem style="item-id: 37109" />
@@ -818,7 +818,7 @@
                   class="conversion-column-item-conversion-button"
                   *disabled="self.conversion.disableSliverConversion"
                   onhover="self:handleDescription('convert-sliver-cost')"
-                  onclick="self.conversion:toggle(3)"
+                  onclick="self.conversion.toggle(3)"
                 >
                   <UIItem
                     style="item-id: 37110"
@@ -866,7 +866,7 @@
                 <div
                   class="conversion-column-item-increase-button"
                   *disabled="self.conversion.disableIncreaseDustLimit"
-                  onclick="self.conversion:toggle(4)"
+                  onclick="self.conversion.toggle(4)"
                   onhover="self:handleDescription('increase-dust-limit-cost')"
                 >
                   <UIItem style="item-id: 37160" />
@@ -908,7 +908,7 @@
                 *visible="self.history.showPreviousButton"
                 *disabled="not self.history.showPreviousButton"
                 class="history-footer-previous"
-                onclick="self.history:onHistoryPreviousPage()"
+                onclick="self.history.onHistoryPreviousPage()"
               >
                 Previous Page
               </button>
@@ -921,7 +921,7 @@
                 *visible="self.history.showNextButton"
                 *disabled="not self.history.showNextButton"
                 class="history-footer-next"
-                onclick="self.history:onHistoryNextPage()"
+                onclick="self.history.onHistoryNextPage()"
               >
                 Next Page
               </button>

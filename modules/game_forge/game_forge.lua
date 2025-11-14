@@ -485,7 +485,7 @@ local function handleFusionItems(data)
     return currentList
 end
 
-function ForgeController.fusion:exaltedCoreImprovements(currentType)
+function ForgeController.fusion.exaltedCoreImprovements(currentType)
     if currentType == 'improve-chance' then
         ForgeController.fusion.chanceImprovedChecked = not ForgeController.fusion.chanceImprovedChecked
         if ForgeController.fusion.chanceImprovedChecked then
@@ -546,7 +546,7 @@ function ForgeController:toggleTransferMenu()
     self.transfer.clip = { x = 0, y = 34, width = 116, height = 34 }
 end
 
-function ForgeController.fusion:handleSelect(item)
+function ForgeController.fusion.handleSelect(item)
     ForgeController.fusion.selectedTarget = cloneValue(ForgeController.baseSelected)
     ForgeController:handleSelect(ForgeController.fusion, item, false)
 end
@@ -611,7 +611,7 @@ function ForgeController:handleSelect(data, item, isTransfer)
     end
 end
 
-function ForgeController.transfer:handleSelect(item)
+function ForgeController.transfer.handleSelect(item)
     ForgeController.transfer.exaltedCoresLabel = "???"
     if not item then
         return
@@ -970,7 +970,7 @@ ForgeController.conversion = {
     },
 }
 
-function ForgeController.conversion:handleButtons()
+function ForgeController.conversion.handleButtons()
     local dustMax = ForgeController.conversion.dustMax or 100
     ForgeController.conversion.disableDustConversion = ForgeController.currentDust <
         ForgeController.conversion.necessaryDustToSliver
@@ -988,7 +988,7 @@ function ForgeController.conversion:handleButtons()
     end
 end
 
-function ForgeController.conversion:toggle(conversionType)
+function ForgeController.conversion.toggle(conversionType)
     local player = g_game.getLocalPlayer()
     if not player then
         return
@@ -1096,7 +1096,7 @@ function onBrowseForgeHistory(page, lastPage, currentCount, historyList)
     ForgeController.history.list = historyList or {}
 end
 
-function ForgeController.history:onHistoryPreviousPage()
+function ForgeController.history.onHistoryPreviousPage()
     local currentPage = ForgeController.history.currentPage or 0
     if currentPage <= 1 then
         return
@@ -1105,7 +1105,7 @@ function ForgeController.history:onHistoryPreviousPage()
     g_game.sendForgeBrowseHistoryRequest(currentPage - 1)
 end
 
-function ForgeController.history:onHistoryNextPage()
+function ForgeController.history.onHistoryNextPage()
     local currentPage = ForgeController.history.currentPage or 0
     local lastPage = ForgeController.history.lastPage or currentPage
 
