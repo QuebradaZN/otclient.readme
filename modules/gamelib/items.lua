@@ -201,6 +201,7 @@ function ItemsDatabase.setCharges(widget, item, style)
     end
 end
 
+
 function ItemsDatabase.setDuration(widget, item, style)
     if not g_game.getFeature(GameThingClock) or not widget then
         return

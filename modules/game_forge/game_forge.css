@@ -67,6 +67,7 @@
   width: 140px;
   height: 90px;
 }
+
 .fusion-buttons-improve {
   padding: 3px 5px !important;
 }
@@ -74,6 +75,7 @@
   padding: 3px 5px !important;
   --image-border: 3;
 }
+
 .fusion-buttons-text-container {
   display: flex;
   width: 150px;
@@ -216,7 +218,7 @@
 .transfer-description {
   --image-size: 465 75;
   height: 75px;
-  --image-source: "/images/game/actionbar/2pixel-up-frame-borderimage.png";
+  --image-source: "/images/ui/2pixel_up_frame_borderimage";
   --image-border: 3;
   margin-top: 10px;
   text-align: left;
@@ -324,7 +326,7 @@
 .description {
   --image-size: 465 50;
   height: 50px;
-  --image-source: "/images/game/actionbar/2pixel-up-frame-borderimage.png";
+  --image-source: "/images/ui/2pixel_up_frame_borderimage";
   --image-border: 3;
   margin-top: 10px;
   color: #c0c0c0;
@@ -338,6 +340,14 @@
   height: 290px;
   background-color: #404040;
   width: 465px;
+  --border-width-top: 1;
+  --border-color-top: black;
+  --border-width-left: 1;
+  --border-color-left: black;
+  --border-width-bottom: 1;
+  --border-color-bottom: #747474;
+  --border-width-right: 1;
+  --border-color-right: #747474;
 }
 
 .history-list {
@@ -350,6 +360,10 @@
   width: 100%;
   text-align: left;
   height: 100%;
+  padding-left: 1px;
+  padding-top: 1px;
+  padding-right: 1px;
+
 }
 
 .history-table tbody tr:nth-child(odd) {
@@ -360,6 +374,7 @@
 .history-table tbody tr:nth-child(even) {
   background-color: #414141;
   color: white;
+  
 }
 
 .history-footer {
@@ -400,6 +415,7 @@
   align-items: center;
   text-align: center;
 }
+
 .base-dust-resource-bg {
   width: 80px;
   height: 20px;

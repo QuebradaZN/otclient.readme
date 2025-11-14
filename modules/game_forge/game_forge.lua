@@ -1,17 +1,41 @@
 ForgeController = Controller:new()
 ForgeButton = nil
 
-local helpers = require('modules.game_forge.game_forge_helpers')
-local cloneValue = helpers.cloneValue
-local normalizeClassPriceEntries = helpers.normalizeClassPriceEntries
-local normalizeTierPriceEntries = helpers.normalizeTierPriceEntries
-local formatHistoryDate = helpers.formatHistoryDate
+local cloneValue = Helpers.cloneValue
+local normalizeClassPriceEntries = Helpers.normalizeClassPriceEntries
+local normalizeTierPriceEntries = Helpers.normalizeTierPriceEntries
+local formatHistoryDate = Helpers.formatHistoryDate
 ForgeController.showResult = false
 ForgeController.showBonus = false
-local rightArrow = helpers.rightArrow
-local filledRightArrow = helpers.filledRightArrow
-ForgeController.result = cloneValue(helpers.baseResult)
-ForgeController.baseResult = helpers.baseResult
+local rightArrow = Helpers.rightArrow
+local filledRightArrow = Helpers.filledRightArrow
+ForgeController.result = cloneValue(Helpers.baseResult)
+ForgeController.baseResult = Helpers.baseResult
+
+function ForgeController:onGameStart()
+    if g_game.getFeature(GameForgeConvergence) then -- Summer Update 2017
+        self:updateResourceBalances()
+        self:registerEvents(g_game, {
+            onBrowseForgeHistory = onBrowseForgeHistory,
+            forgeData = forgeData,
+            onOpenForge = onOpenForge,
+            onResourcesBalanceChange = function() self:updateResourceBalances() end,
+            forgeResultData = forgeResultData
+        })
+
+        if not ForgeButton then
+            ForgeButton = modules.game_mainpanel.addToggleButton('ForgeButton', tr('Open Exaltation Forge'),
+                '/images/options/button-exaltation-forge.png', function()
+                    self:toggle()
+                end)
+        end
+        self.currentTab = 'conversion'
+    else
+        scheduleEvent(function()
+            g_modules.getModule("game_forge"):unload()
+        end, 100)
+    end
+end
 
 local function resetInfo()
     ForgeController.transfer.exaltedCoresLabel = "???"
@@ -31,12 +55,12 @@ local function resetInfo()
     ForgeController.fusion.reduceTierLossChecked = false
     ForgeController.showResult = false
     ForgeController.showBonus = false
-    ForgeController.result = cloneValue(helpers.baseResult)
+    ForgeController.result = cloneValue(Helpers.baseResult)
     ForgeController.description = ""
 end
 
 function ForgeController:handleDescription(currentType)
-    helpers.handleDescription(ForgeController, currentType)
+    Helpers.handleDescription(ForgeController, currentType)
 end
 
 function ForgeController:show(skipRequest)
@@ -133,21 +157,7 @@ ForgeController.baseSelected = {
 }
 
 function ForgeController:onInit()
-    self:updateResourceBalances()
-    self:registerEvents(g_game, {
-        onBrowseForgeHistory = onBrowseForgeHistory,
-        forgeData = forgeData,
-        onOpenForge = onOpenForge,
-        onResourcesBalanceChange = self:updateResourceBalances(),
-        forgeResultData = forgeResultData,
-    })
 
-    if not ForgeButton then
-        ForgeButton = modules.game_mainpanel.addToggleButton('ForgeButton', tr('Open Exaltation Forge'),
-            '/images/options/button-exaltation-forge.png', function() self:toggle() end)
-    end
-
-    self.currentTab = 'conversion'
 end
 
 function ForgeController:getPrice(prices, itemId, currentTier, isConvergence, isTransfer)
@@ -247,39 +257,39 @@ function ForgeController:resultSystemEvent()
 
     if ForgeController.result.eventCount == 1 then
         ForgeController.result.arrows = {
-            { arrow = helpers.filledRightArrow, },
-            { arrow = helpers.rightArrow, },
-            { arrow = helpers.rightArrow, }
+            { arrow = Helpers.filledRightArrow, },
+            { arrow = Helpers.rightArrow, },
+            { arrow = Helpers.rightArrow, }
         }
     elseif ForgeController.result.eventCount == 2 then
         ForgeController.result.arrows = {
-            { arrow = helpers.filledRightArrow, },
-            { arrow = helpers.filledRightArrow, },
-            { arrow = helpers.rightArrow, }
+            { arrow = Helpers.filledRightArrow, },
+            { arrow = Helpers.filledRightArrow, },
+            { arrow = Helpers.rightArrow, }
         }
     elseif ForgeController.result.eventCount == 3 then
         ForgeController.result.arrows = {
-            { arrow = helpers.filledRightArrow, },
-            { arrow = helpers.filledRightArrow, },
-            { arrow = helpers.filledRightArrow, }
+            { arrow = Helpers.filledRightArrow, },
+            { arrow = Helpers.filledRightArrow, },
+            { arrow = Helpers.filledRightArrow, }
         }
     elseif ForgeController.result.eventCount == 4 then
         ForgeController.result.arrows = {
-            { arrow = helpers.rightArrow, },
-            { arrow = helpers.filledRightArrow, },
-            { arrow = helpers.filledRightArrow, }
+            { arrow = Helpers.rightArrow, },
+            { arrow = Helpers.filledRightArrow, },
+            { arrow = Helpers.filledRightArrow, }
         }
     elseif ForgeController.result.eventCount == 5 then
         ForgeController.result.arrows = {
-            { arrow = helpers.rightArrow, },
-            { arrow = helpers.rightArrow, },
-            { arrow = helpers.filledRightArrow, }
+            { arrow = Helpers.rightArrow, },
+            { arrow = Helpers.rightArrow, },
+            { arrow = Helpers.filledRightArrow, }
         }
     elseif ForgeController.result.eventCount == 6 then
         ForgeController.result.arrows = {
-            { arrow = helpers.rightArrow, },
-            { arrow = helpers.rightArrow, },
-            { arrow = helpers.rightArrow, }
+            { arrow = Helpers.rightArrow, },
+            { arrow = Helpers.rightArrow, },
+            { arrow = Helpers.rightArrow, }
         }
         if (ForgeController.result.bonus or 0) > 0 then
             ForgeController.result.buttonLabel = "Next"
@@ -289,7 +299,7 @@ function ForgeController:resultSystemEvent()
             ForgeController.result.rightShader = "Outfit - ForgeSuccess"
             ForgeController.result.label = "Your transfer attempt was "
             ForgeController.result.labelResult = "successful."
-            ForgeController.result.color = helpers.green
+            ForgeController.result.color = Helpers.green
 
             ForgeController.result.rightShader = ""
             ForgeController.result.leftItemId = -1
@@ -299,7 +309,7 @@ function ForgeController:resultSystemEvent()
             ForgeController.result.labelResult = "failed."
             ForgeController.result.rightShader = "Outfit - ForgeFailed"
             ForgeController.result.leftShader = ""
-            ForgeController.result.color = helpers.red
+            ForgeController.result.color = Helpers.red
 
             scheduleEvent(function()
                 ForgeController.result.rightItemId = -1
@@ -316,7 +326,7 @@ function ForgeController:resultSystemEvent()
 end
 
 function forgeResultData(rawData)
-    ForgeController.result = cloneValue(helpers.baseResult)
+    ForgeController.result = cloneValue(Helpers.baseResult)
     ForgeController.showResult = true
     ForgeController.showBonus = false
     local data = cloneValue(rawData)
@@ -335,9 +345,9 @@ function forgeResultData(rawData)
     end
 
     ForgeController.result.arrows = {
-        { arrow = helpers.filledRightArrow, },
-        { arrow = helpers.rightArrow, },
-        { arrow = helpers.rightArrow, }
+        { arrow = Helpers.filledRightArrow, },
+        { arrow = Helpers.rightArrow, },
+        { arrow = Helpers.rightArrow, }
     }
     ForgeController.result.buttonLabel = "Close"
     ForgeController.result.bonusLabel = "-"
@@ -408,7 +418,7 @@ function forgeResultData(rawData)
     end, 750)
 end
 
-local buttonClip = { x = 0, y = 0, width = 43, height = 20 }
+local buttonClip = { x = 0, y = 0, width = 22, height = 23 }
 local buttonClipPressed = { x = 0, y = 20, width = 43, height = 20 }
 -- FUSION MENU
 ForgeController.fusion = {
@@ -828,9 +838,9 @@ end
 
 function ForgeController:getColor(currentType)
     ForgeController.conversion:handleButtons()
-    local red = helpers.red
-    local base = helpers.grey
-    local green = helpers.green
+    local red = Helpers.red
+    local base = Helpers.grey
+    local green = Helpers.green
 
     if currentType == "dustToSilver" then
         if self.currentDust >= self.conversion.necessaryDustToSliver then
