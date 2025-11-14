@@ -773,7 +773,6 @@ void ProtocolGame::parseResourceBalance(const InputMessagePtr& msg) const
             value = msg->getU64();
             break;
     }
-
     m_localPlayer->setResourceBalance(type, value);
 }
 

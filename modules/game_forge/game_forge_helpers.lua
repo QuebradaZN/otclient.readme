@@ -1,4 +1,4 @@
-local Helpers = {}
+Helpers = {}
 
 function Helpers.cloneValue(value)
     if type(value) == 'table' then
@@ -328,4 +328,3 @@ function Helpers.handleDescription(data, currentType)
     end
 end
 
-return Helpers
