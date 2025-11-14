@@ -12,6 +12,31 @@ local filledRightArrow = Helpers.filledRightArrow
 ForgeController.result = cloneValue(Helpers.baseResult)
 ForgeController.baseResult = Helpers.baseResult
 
+function ForgeController:onGameStart()
+    if g_game.getFeature(GameForgeConvergence) then -- Summer Update 2017
+        self:updateResourceBalances()
+        self:registerEvents(g_game, {
+            onBrowseForgeHistory = onBrowseForgeHistory,
+            forgeData = forgeData,
+            onOpenForge = onOpenForge,
+            onResourcesBalanceChange = function() self:updateResourceBalances() end,
+            forgeResultData = forgeResultData
+        })
+
+        if not ForgeButton then
+            ForgeButton = modules.game_mainpanel.addToggleButton('ForgeButton', tr('Open Exaltation Forge'),
+                '/images/options/button-exaltation-forge.png', function()
+                    self:toggle()
+                end)
+        end
+        self.currentTab = 'conversion'
+    else
+        scheduleEvent(function()
+            g_modules.getModule("game_forge"):unload()
+        end, 100)
+    end
+end
+
 local function resetInfo()
     ForgeController.transfer.exaltedCoresLabel = "???"
     ForgeController.transfer.selected = cloneValue(ForgeController.baseSelected)
@@ -132,21 +157,7 @@ ForgeController.baseSelected = {
 }
 
 function ForgeController:onInit()
-    self:updateResourceBalances()
-    self:registerEvents(g_game, {
-        onBrowseForgeHistory = onBrowseForgeHistory,
-        forgeData = forgeData,
-        onOpenForge = onOpenForge,
-        onResourcesBalanceChange = self:updateResourceBalances(),
-        forgeResultData = forgeResultData,
-    })
 
-    if not ForgeButton then
-        ForgeButton = modules.game_mainpanel.addToggleButton('ForgeButton', tr('Open Exaltation Forge'),
-            '/images/options/button-exaltation-forge.png', function() self:toggle() end)
-    end
-
-    self.currentTab = 'conversion'
 end
 
 function ForgeController:getPrice(prices, itemId, currentTier, isConvergence, isTransfer)
