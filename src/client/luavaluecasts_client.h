@@ -110,8 +110,9 @@ int push_luavalue(const ForgeTierPrice& data);
 int push_luavalue(const ForgeGradeData& data);
 int push_luavalue(const ForgeClassTierPrices& data);
 int push_luavalue(const ForgeResultData& data);
+int push_luavalue(const ForgeConfigData& data);
 
-// Game Analysers Structs
+// Analyser
 int push_luavalue(const BossCooldownData& data);
 int push_luavalue(const PartyMemberData& data);
 int push_luavalue(const PartyMemberName& data);
