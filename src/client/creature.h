@@ -117,13 +117,13 @@ public:
 
     uint16_t getSpeed() { return m_speed; }
     uint16_t getBaseSpeed() { return m_baseSpeed; }
-    uint16_t getStepDuration(bool ignoreDiagonal = false, Otc::Direction dir = Otc::InvalidDirection);
+    virtual uint16_t getStepDuration(bool ignoreDiagonal = false, Otc::Direction dir = Otc::InvalidDirection);
 
     uint32_t getId() override { return m_id; }
     uint32_t getMasterId() { return m_masterId; }
     std::string getName() { return m_name.getText(); }
 
-    Point getDrawOffset() { return Point(-1, -1) * getDrawElevation() + m_walkOffset; }
+    virtual Point getDrawOffset() { return Point(-1, -1) * getDrawElevation() + m_walkOffset; }
     int getDrawElevation();
 
     Otc::Direction getDirection() { return m_direction; }

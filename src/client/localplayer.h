@@ -140,10 +140,12 @@ public:
     bool isLocalPlayer() const override { return true; }
 
     void onPositionChange(const Position& newPos, const Position& oldPos) override;
+    uint16_t getStepDuration(bool ignoreDiagonal = false, Otc::Direction dir = Otc::InvalidDirection) override;
 
     void preWalk(Otc::Direction direction);
 
     Position getPosition() override { return isPreWalking() ? m_preWalks.back() : m_position; }
+    Point getDrawOffset() override;
     void resetPreWalk() { m_preWalks.clear(); }
     auto getPreWalkingSize() { return m_preWalks.size(); }
 
@@ -176,6 +178,7 @@ private:
     Timer m_walkCorrectionTimer;
     PointF m_walkCorrection;
     ticks_t m_walkLockExpiration{ 0 };
+    Position m_serverConfirmedPos;
 
     bool m_knownCompletePath{ false };
     bool m_premium{ false };

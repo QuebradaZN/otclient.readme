@@ -30,6 +30,14 @@
 #include "framework/core/clock.h"
 #include "framework/core/eventdispatcher.h"
 
+namespace {
+    // Walk timing constants
+    constexpr int WALK_CORRECTION_DECAY_MS = 250;           // Duration for visual correction decay
+    constexpr int ADJUST_INVALID_POS_BASE_DELAY_MS = 1000;  // Balanced recovery
+    constexpr int ADJUST_INVALID_POS_MAX_DELAY_MS = 3000;   // Safe limit for high lag
+}
+
+
 void LocalPlayer::lockWalk(const uint16_t millis)
 {
     m_walkLockExpiration = std::max<ticks_t>(m_walkLockExpiration, g_clock.millis() + millis);
@@ -37,45 +45,64 @@ void LocalPlayer::lockWalk(const uint16_t millis)
 
 bool LocalPlayer::canWalk(const bool ignoreLock)
 {
-    // Prevent movement if the player is dead
-    if (isDead())
-        return false;
+    if (isDead()) return false;
+    if (isWalkLocked() && !ignoreLock) return false;
 
-    // Prevent movement if walking is locked, unless ignored
-    if (isWalkLocked() && !ignoreLock)
-        return false;
+    const int preCount = m_preWalks.size();
+    if (preCount >= 2) return false;
 
-    if (!m_preWalks.empty())
+    if (g_game.getWalkMaxSteps() > 0) {
+        if (preCount > g_game.getWalkMaxSteps()) return false;
+    } else if (getPosition() != getServerPosition()) {
         return false;
-
-    // Handle ongoing movement cases
-    if (isWalking()) {
-        if (isAutoWalking()) return true;  // Allow auto-walking
-        if (isPreWalking()) return false;  // Prevent pre-walk interruptions
     }
 
-    return m_walkTimer.ticksElapsed() >= getStepDuration() + 30;
+    if (isWalking()) {
+        if (isAutoWalking()) return true;
+        if (isPreWalking()) return false;
+    }
+
+    const int elapsed = m_walkTimer.ticksElapsed();
+    const int duration = getStepDuration();
+    const int safetyBuffer = (duration < 150) ? 5 : 25;
+    
+    if (elapsed < (duration + safetyBuffer)) return false;
+
+    return true;
 }
 
 void LocalPlayer::walk(const Position& oldPos, const Position& newPos)
 {
     m_autoWalkRetries = 0;
+    
+    if (!m_serverConfirmedPos.isValid()) m_serverConfirmedPos = oldPos;
+    m_serverConfirmedPos = newPos;
 
-    if (isPreWalking() && newPos == m_preWalks.front()) {
+    if (isPreWalking() && !m_preWalks.empty() && newPos == m_preWalks.front()) {
         m_preWalks.pop_front();
+        if (m_preWalks.empty()) cancelAdjustInvalidPosEvent();
+        else registerAdjustInvalidPosEvent();
         return;
     }
 
     if (!m_preWalks.empty()) {
-        const Position oldLogicalPos = getPosition();
+        const Position logicalPos = getPosition();
+        const Point currentVisualOffset = m_walkOffset;
+        
         cancelAdjustInvalidPosEvent();
         m_preWalks.clear();
-        const Position delta = oldLogicalPos - oldPos;
-        m_walkCorrection += PointF(delta.x * g_gameConfig.getSpriteSize(), delta.y * g_gameConfig.getSpriteSize());
+        setPosition(newPos); 
+        
+        const Position delta = logicalPos - newPos;
+        m_walkCorrection = PointF(
+            static_cast<float>(delta.x * g_gameConfig.getSpriteSize() + currentVisualOffset.x),
+            static_cast<float>(delta.y * g_gameConfig.getSpriteSize() + currentVisualOffset.y)
+        );
         m_walkCorrectionTimer.restart();
     } else {
         cancelAdjustInvalidPosEvent();
         m_preWalks.clear();
+        m_serverConfirmedPos = newPos;
     }
 
     m_serverWalk = true;
@@ -84,10 +111,12 @@ void LocalPlayer::walk(const Position& oldPos, const Position& newPos)
 
 void LocalPlayer::preWalk(Otc::Direction direction)
 {
-    m_lastMapDuration = -1;
-
     const auto& oldPos = getPosition();
-    Creature::walk(oldPos, m_preWalks.emplace_back(oldPos.translatedToDirection(direction)));
+    const auto& newPos = oldPos.translatedToDirection(direction);
+    
+    m_lastMapDuration = getStepDuration();
+    
+    Creature::walk(oldPos, m_preWalks.emplace_back(newPos));
     Creature::onPositionChange(getLastStepToPosition(), getLastStepFromPosition());
     registerAdjustInvalidPosEvent();
 }
@@ -96,7 +125,6 @@ void LocalPlayer::onWalking() {
     if (isPreWalking()) {
         if (const auto& tile = g_map.getTile(getPosition())) {
             for (const auto& creature : tile->getWalkingCreatures()) {
-                // Cancel pre-walk movement if the local player tries to walk on an unwalkable tile.
                 if (creature.get() != this && creature->getPosition() == getPosition() && !creature->isPassable()) {
                     cancelWalk();
                     g_map.notificateTileUpdate(getPosition(), asLocalPlayer(), Otc::OPERATION_CLEAN);
@@ -108,31 +136,58 @@ void LocalPlayer::onWalking() {
 
     if (!m_walkCorrection.isNull()) {
         const float elapsed = m_walkCorrectionTimer.ticksElapsed();
-        const float factor = std::max<float>(0.0f, 1.0f - (elapsed / 250.0f)); // Decay over 250ms
-
-        if (factor <= 0.0f) {
+        if (elapsed >= WALK_CORRECTION_DECAY_MS) {
             m_walkCorrection = PointF();
-        } else {
-            const Point oldTotalOffset = m_walkOffset;
-            const Point correction = Point(m_walkCorrection.x * factor, m_walkCorrection.y * factor);
-            m_walkOffset += correction;
-            
-            if (isCameraFollowing() && oldTotalOffset != m_walkOffset) {
-                g_map.notificateCameraMove(m_walkOffset);
-            }
+        } else if (isCameraFollowing()) {
+            const float t = std::clamp(elapsed / static_cast<float>(WALK_CORRECTION_DECAY_MS), 0.0f, 1.0f);
+            const float factor = 1.0f - (t * t);
+            const Point correctionOffset = Point(
+                static_cast<int>(m_walkCorrection.x * factor),
+                static_cast<int>(m_walkCorrection.y * factor)
+            );
+            g_map.notificateCameraMove(m_walkOffset + correctionOffset);
         }
     }
 }
 
+Point LocalPlayer::getDrawOffset()
+{
+    Point baseOffset = Point(-1, -1) * getDrawElevation() + m_walkOffset;
+    if (m_walkCorrection.isNull()) return baseOffset;
+    
+    const float elapsed = m_walkCorrectionTimer.ticksElapsed();
+    const float t = std::clamp(elapsed / static_cast<float>(WALK_CORRECTION_DECAY_MS), 0.0f, 1.0f);
+    const float factor = 1.0f - (t * t);
+    
+    if (factor <= 0.0f) return baseOffset;
+    
+    return baseOffset + Point(static_cast<int>(m_walkCorrection.x * factor), static_cast<int>(m_walkCorrection.y * factor));
+}
+
 void LocalPlayer::registerAdjustInvalidPosEvent() {
     cancelAdjustInvalidPosEvent();
-    const int delay = std::max<int>(getStepDuration(), g_game.getPing()) + 1000;
+    
+    // Use the maximum of current and last duration to prevent early timeouts during speed transitions
+    const int effectiveDur = std::max<int>(getStepDuration(), m_lastMapDuration);
+    const int baseDelay = std::max<int>(effectiveDur, g_game.getPing());
+    const int delay = std::min<int>(baseDelay + ADJUST_INVALID_POS_BASE_DELAY_MS, ADJUST_INVALID_POS_MAX_DELAY_MS);
+    
     m_adjustInvalidPosEvent = g_dispatcher.scheduleEvent([this, self = asLocalPlayer()] {
         if (!m_preWalks.empty()) {
-            const Position oldLogicalPos = getPosition();
+            const Position logicalPos = getPosition();
+            const Point currentVisualOffset = m_walkOffset;
+            const Position serverPos = m_serverConfirmedPos;
+            
+            const size_t preCountBeforeClear = m_preWalks.size();
+            cancelAdjustInvalidPosEvent();
             m_preWalks.clear();
-            const Position delta = oldLogicalPos - m_position;
-            m_walkCorrection += PointF(delta.x * g_gameConfig.getSpriteSize(), delta.y * g_gameConfig.getSpriteSize());
+            setPosition(serverPos);
+            
+            const Position delta = logicalPos - serverPos;
+            m_walkCorrection = PointF(
+                static_cast<float>(delta.x * g_gameConfig.getSpriteSize() + currentVisualOffset.x),
+                static_cast<float>(delta.y * g_gameConfig.getSpriteSize() + currentVisualOffset.y)
+            );
             m_walkCorrectionTimer.restart();
         }
         g_game.resetMapUpdatedAt();
@@ -271,6 +326,7 @@ void LocalPlayer::onPositionChange(const Position& newPos, const Position& oldPo
         return;
 
     Creature::onPositionChange(newPos, oldPos);
+    m_serverConfirmedPos = newPos;
 
     if (newPos == m_autoWalkDestination)
         stopAutoWalk();
@@ -286,16 +342,17 @@ void LocalPlayer::setStates(const uint64_t states)
         return;
 
     const uint64_t oldStates = m_states;
+    const uint16_t oldDuration = getStepDuration();
     m_states = states;
+    const uint16_t newDuration = getStepDuration();
 
-    const bool wasParalyzed = (oldStates & Otc::IconParalyze) == Otc::IconParalyze;
-    const bool isNowParalyzed = (states & Otc::IconParalyze) == Otc::IconParalyze;
+    if (((states & Otc::IconParalyze) == Otc::IconParalyze) && !m_walking && newDuration > 0) {
+         m_walkTimer.update(-newDuration);
+    }
 
-    if (isNowParalyzed && !wasParalyzed) {
-        const auto stepDuration = getStepDuration();
-        if (!m_walking) {
-             m_walkTimer.update(-stepDuration);
-        }
+    
+    if (oldDuration != newDuration && isCameraFollowing()) {
+        g_map.notificateCameraMove(m_walkOffset);
     }
 
     callLuaField("onStatesChange", states, oldStates);
@@ -320,6 +377,17 @@ void LocalPlayer::setSkill(const Otc::Skill skillId, const uint16_t level, const
     skill.levelPercent = levelPercent;
 
     callLuaField("onSkillChange", skillId, level, levelPercent, oldLevel, oldLevelPercent);
+}
+
+uint16_t LocalPlayer::getStepDuration(bool ignoreDiagonal, Otc::Direction dir)
+{
+    uint16_t duration = Creature::getStepDuration(ignoreDiagonal, dir);
+    
+    if (isParalyzed()) {
+        duration = static_cast<uint16_t>(duration * 1.15f);
+    }
+    
+    return duration;
 }
 
 void LocalPlayer::setBaseSkill(const Otc::Skill skill, const uint16_t baseLevel)
