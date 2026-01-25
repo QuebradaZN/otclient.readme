@@ -173,6 +173,8 @@ private:
 
     ScheduledEventPtr m_adjustInvalidPosEvent;
     ScheduledEventPtr m_autoWalkContinueEvent;
+    Timer m_walkCorrectionTimer;
+    PointF m_walkCorrection;
     ticks_t m_walkLockExpiration{ 0 };
 
     bool m_knownCompletePath{ false };

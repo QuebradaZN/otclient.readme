@@ -46,6 +46,7 @@ public:
 
     void onAppear() override;
     void onDisappear() override;
+    void setPosition(const Position& position, uint8_t stackPos = 0) override;
 
     void draw(const Point& dest, bool drawThings = true, LightView* lightView = nullptr) override;
     void draw(const Rect& destRect, uint8_t size, bool center = false);

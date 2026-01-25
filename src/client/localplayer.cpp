@@ -45,11 +45,7 @@ bool LocalPlayer::canWalk(const bool ignoreLock)
     if (isWalkLocked() && !ignoreLock)
         return false;
 
-    // Ensure movement synchronization with the server
-    if (g_game.getWalkMaxSteps() > 0) {
-        if (m_preWalks.size() > g_game.getWalkMaxSteps())
-            return false;
-    } else if (getPosition() != getServerPosition())
+    if (!m_preWalks.empty())
         return false;
 
     // Handle ongoing movement cases
@@ -58,8 +54,7 @@ bool LocalPlayer::canWalk(const bool ignoreLock)
         if (isPreWalking()) return false;  // Prevent pre-walk interruptions
     }
 
-    // allow only if walk done, ex. diagonals may need additional ticks before taking another step
-    return m_walkTimer.ticksElapsed() >= getStepDuration();
+    return m_walkTimer.ticksElapsed() >= getStepDuration() + 30;
 }
 
 void LocalPlayer::walk(const Position& oldPos, const Position& newPos)
@@ -71,10 +66,19 @@ void LocalPlayer::walk(const Position& oldPos, const Position& newPos)
         return;
     }
 
-    cancelAdjustInvalidPosEvent();
-    m_preWalks.clear();
-    m_serverWalk = true;
+    if (!m_preWalks.empty()) {
+        const Position oldLogicalPos = getPosition();
+        cancelAdjustInvalidPosEvent();
+        m_preWalks.clear();
+        const Position delta = oldLogicalPos - oldPos;
+        m_walkCorrection += PointF(delta.x * g_gameConfig.getSpriteSize(), delta.y * g_gameConfig.getSpriteSize());
+        m_walkCorrectionTimer.restart();
+    } else {
+        cancelAdjustInvalidPosEvent();
+        m_preWalks.clear();
+    }
 
+    m_serverWalk = true;
     Creature::walk(oldPos, newPos);
 }
 
@@ -101,15 +105,39 @@ void LocalPlayer::onWalking() {
             }
         }
     }
+
+    if (!m_walkCorrection.isNull()) {
+        const float elapsed = m_walkCorrectionTimer.ticksElapsed();
+        const float factor = std::max<float>(0.0f, 1.0f - (elapsed / 250.0f)); // Decay over 250ms
+
+        if (factor <= 0.0f) {
+            m_walkCorrection = PointF();
+        } else {
+            const Point oldTotalOffset = m_walkOffset;
+            const Point correction = Point(m_walkCorrection.x * factor, m_walkCorrection.y * factor);
+            m_walkOffset += correction;
+            
+            if (isCameraFollowing() && oldTotalOffset != m_walkOffset) {
+                g_map.notificateCameraMove(m_walkOffset);
+            }
+        }
+    }
 }
 
 void LocalPlayer::registerAdjustInvalidPosEvent() {
     cancelAdjustInvalidPosEvent();
+    const int delay = std::max<int>(getStepDuration(), g_game.getPing()) + 1000;
     m_adjustInvalidPosEvent = g_dispatcher.scheduleEvent([this, self = asLocalPlayer()] {
-        m_preWalks.clear();
+        if (!m_preWalks.empty()) {
+            const Position oldLogicalPos = getPosition();
+            m_preWalks.clear();
+            const Position delta = oldLogicalPos - m_position;
+            m_walkCorrection += PointF(delta.x * g_gameConfig.getSpriteSize(), delta.y * g_gameConfig.getSpriteSize());
+            m_walkCorrectionTimer.restart();
+        }
         g_game.resetMapUpdatedAt();
         m_adjustInvalidPosEvent = nullptr;
-    }, std::min<int>(std::max<int>(getStepDuration(), g_game.getPing()) + 100, 1000));
+    }, delay);
 }
 
 void LocalPlayer::cancelAdjustInvalidPosEvent() {
@@ -260,8 +288,15 @@ void LocalPlayer::setStates(const uint64_t states)
     const uint64_t oldStates = m_states;
     m_states = states;
 
-    if (isParalyzed())
-        m_walkTimer.update(-getStepDuration());
+    const bool wasParalyzed = (oldStates & Otc::IconParalyze) == Otc::IconParalyze;
+    const bool isNowParalyzed = (states & Otc::IconParalyze) == Otc::IconParalyze;
+
+    if (isNowParalyzed && !wasParalyzed) {
+        const auto stepDuration = getStepDuration();
+        if (!m_walking) {
+             m_walkTimer.update(-stepDuration);
+        }
+    }
 
     callLuaField("onStatesChange", states, oldStates);
 }

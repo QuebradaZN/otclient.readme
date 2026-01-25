@@ -487,6 +487,14 @@ void Creature::turn(const Otc::Direction direction)
     setDirection(direction);
 }
 
+void Creature::setPosition(const Position& position, uint8_t stackPos)
+{
+    if (m_position == position)
+        return;
+
+    Thing::setPosition(position, stackPos);
+}
+
 void Creature::walk(const Position& oldPos, const Position& newPos)
 {
     if (oldPos == newPos)
@@ -932,6 +940,7 @@ void Creature::setSpeed(uint16_t speed)
         return;
 
     const uint16_t oldSpeed = m_speed;
+    const uint16_t oldDuration = getStepDuration();
     m_speed = speed;
 
     // Cache for stepSpeed Law
@@ -941,6 +950,21 @@ void Creature::setSpeed(uint16_t speed)
         if (speed > -speedB) {
             m_calculatedStepSpeed = std::max<int>(1, floor((speedA * log((speed / 2.) + speedB) + speedC) + .5));
         } else m_calculatedStepSpeed = 1;
+    }
+
+    const uint16_t newDuration = getStepDuration();
+    if (m_walking && oldDuration > 0 && newDuration > 0 && oldDuration != newDuration && isLocalPlayer()) {
+        const int64_t elapsed = static_cast<int64_t>(g_clock.millis()) - static_cast<int64_t>(m_walkTimer.startTicks());
+        const double progress = elapsed / static_cast<double>(oldDuration);
+        int64_t newElapsed = 0;
+        if (newDuration < oldDuration) {
+            const int64_t remainingSlow = oldDuration - elapsed;
+            newElapsed = newDuration - remainingSlow;
+        } else {
+            newElapsed = static_cast<int64_t>(progress * newDuration);
+        }
+        const int64_t delta = -(newElapsed - elapsed);
+        m_walkTimer.update(delta);
     }
 
     if (isLocalPlayer())
@@ -1098,9 +1122,13 @@ uint16_t Creature::getStepDuration(const bool ignoreDiagonal, const Otc::Directi
         m_stepCache.groundSpeed = groundSpeed;
 
         uint32_t stepDuration = 1000 * groundSpeed;
-        if (hasSpeedFormula()) {
+        if (hasSpeedFormula() && m_calculatedStepSpeed > 0) {
             stepDuration /= m_calculatedStepSpeed;
-        } else stepDuration /= m_speed;
+        } else if (m_speed > 0) {
+            stepDuration /= m_speed;
+        } else {
+            stepDuration = 0;
+        }
 
         if (g_gameConfig.isForcingNewWalkingFormula() || g_game.getClientVersion() >= 860) {
             stepDuration = ((stepDuration + serverBeat - 1) / serverBeat) * serverBeat;
