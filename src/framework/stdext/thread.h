@@ -22,11 +22,6 @@
 
 #pragma once
 
-#ifndef USE_PRECOMPILED_HEADERS
-#include <atomic>
-#include <cstdint>
-#endif
-
 namespace stdext
 {
     inline int16_t getThreadId() {

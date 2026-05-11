@@ -37,7 +37,6 @@ struct FontConfig
     std::string staticText;
     std::string animatedText;
     std::string creatureText;
-    std::string itemCount;
 };
 
 struct PublicConfig

@@ -22,16 +22,7 @@
 
 #pragma once
 
-#include "framework/stdext/hash.h"
-
-#ifndef USE_PRECOMPILED_HEADERS
-#include <cstddef>
 #include <initializer_list>
-#include <istream>
-#include <memory>
-#include <ostream>
-#include <type_traits>
-#endif
 
 template<int N, int M, typename T = float>
 class Matrix

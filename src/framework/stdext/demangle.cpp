@@ -22,12 +22,6 @@
 
 #include "demangle.h"
 
-#ifndef USE_PRECOMPILED_HEADERS
-#include <cstddef>
-#include <cstdlib>
-#include <cstring>
-#endif
-
 #ifdef _MSC_VER
 
 #pragma warning (push)
@@ -50,13 +44,13 @@ namespace stdext
         const int written = UnDecorateSymbolName(name, Buffer, BufferSize - 1, UNDNAME_COMPLETE);
         Buffer[written] = '\0';
 #else
-        std::size_t len;
+        size_t len;
         int status;
         char* demangled = abi::__cxa_demangle(name, nullptr, &len, &status);
         if (demangled) {
-            std::strncpy(Buffer, demangled, BufferSize - 1);
+            strncpy(Buffer, demangled, BufferSize - 1);
             Buffer[BufferSize - 1] = '\0';
-            std::free(demangled);
+            free(demangled);
         } else {
             Buffer[0] = '\0';
         }

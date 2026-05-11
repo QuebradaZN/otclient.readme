@@ -24,10 +24,6 @@
 
 #include <framework/global.h>
 
-#ifndef USE_PRECOMPILED_HEADERS
-#include <memory>
-#endif
-
 #include <AL/al.h>
 #include <AL/alc.h>
 #include <AL/efx-presets.h>

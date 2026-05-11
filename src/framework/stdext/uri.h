@@ -22,10 +22,6 @@
 
 #pragma once
 
-#ifndef USE_PRECOMPILED_HEADERS
-#include <string>
-#endif
-
 struct ParsedURI
 {
     std::string protocol;

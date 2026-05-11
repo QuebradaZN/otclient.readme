@@ -115,9 +115,7 @@ function controllerNpcTrader:legacy_show()
 end
 
 function controllerNpcTrader:legacy_hide()
-    if npcWindow then
-        npcWindow:hide()
-    end
+    npcWindow:hide()
 end
 
 function controllerNpcTrader:onLegacyItemBoxChecked(widget)

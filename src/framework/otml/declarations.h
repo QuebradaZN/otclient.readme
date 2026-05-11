@@ -24,10 +24,6 @@
 
 #include <framework/global.h>
 
-#ifndef USE_PRECOMPILED_HEADERS
-#include <memory>
-#endif
-
 class OTMLNode;
 class OTMLDocument;
 class OTMLParser;

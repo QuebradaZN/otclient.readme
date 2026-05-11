@@ -24,13 +24,6 @@
 
 #include "../const.h"
 
-#ifndef USE_PRECOMPILED_HEADERS
-#include <algorithm>
-#include <cstddef>
-#include <istream>
-#include <ostream>
-#endif
-
 template <class T>
 class TPoint;
 

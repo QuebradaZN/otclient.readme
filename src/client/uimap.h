@@ -31,9 +31,6 @@ public:
     UIMap();
     ~UIMap() override;
 
-    using UIWidget::draw;
-    using UIWidget::setShader;
-
     void drawSelf(DrawPoolType drawPane) override;
     void draw(DrawPoolType drawPane);
 

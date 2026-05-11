@@ -25,10 +25,6 @@
 #include "glutil.h"
 #include <framework/global.h>
 
-#ifndef USE_PRECOMPILED_HEADERS
-#include <memory>
-#endif
-
 enum class CompositionMode
 {
     NORMAL,

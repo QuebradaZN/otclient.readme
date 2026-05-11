@@ -22,9 +22,6 @@
 
 #include "net.h"
 
-#include <asio/detail/socket_ops.hpp>
-#include <asio/ip/address_v4.hpp>
-
 namespace stdext
 {
     std::string ip_to_string(uint32_t ip)

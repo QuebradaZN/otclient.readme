@@ -27,7 +27,6 @@
 
 namespace {
     constexpr int MAX_FLEX_DEPTH = 32;
-    constexpr double UNBOUNDED_SIZE = std::numeric_limits<double>::max();
     thread_local int s_flexDepth = 0;
     thread_local std::array<std::vector<UIWidgetPtr>, MAX_FLEX_DEPTH> s_pendingDescendantVersionResetRootsByDepth;
     thread_local std::array<std::unordered_set<UIWidget*>, MAX_FLEX_DEPTH> s_pendingDescendantVersionResetLookupByDepth;
@@ -47,11 +46,11 @@ namespace {
         double baseSize{ 0.0 };
         double mainSize{ 0.0 };
         double minMain{ 0.0 };
-        double maxMain{ UNBOUNDED_SIZE };
+        double maxMain{ std::numeric_limits<double>::infinity() };
 
         double crossSize{ 0.0 };
         double minCross{ 0.0 };
-        double maxCross{ UNBOUNDED_SIZE };
+        double maxCross{ std::numeric_limits<double>::infinity() };
 
         double marginMainStart{ 0.0 };
         double marginMainEnd{ 0.0 };
@@ -130,7 +129,7 @@ namespace {
 
     inline double availableLimit(double maxValue)
     {
-        return maxValue <= 0.0 ? UNBOUNDED_SIZE : maxValue;
+        return maxValue <= 0.0 ? std::numeric_limits<double>::infinity() : maxValue;
     }
 
     inline int roundi(double value)
@@ -465,7 +464,7 @@ void layoutFlex(UIWidget& container)
         : 0.0;
     const double maxInnerMainConstraint = containerMaxMain > 0
         ? std::max(0, containerMaxMain - paddingStart - paddingEnd)
-        : UNBOUNDED_SIZE;
+        : std::numeric_limits<double>::infinity();
 
     const auto& containerMainUnit = (mainAxis == Axis::Horizontal) ? container.getWidthHtml() : container.getHeightHtml();
     bool mainAuto = axisUsesContentWhenAuto(style.display, mainAxis, containerMainUnit);

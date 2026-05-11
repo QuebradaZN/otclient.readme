@@ -24,10 +24,6 @@
 
 #include "global.h"
 
-#ifndef USE_PRECOMPILED_HEADERS
-#include <memory>
-#endif
-
 enum FrameGroupType : uint8_t;
 enum ThingCategory : uint8_t;
 enum StaticDataCategory : uint8_t;

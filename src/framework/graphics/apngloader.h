@@ -22,11 +22,6 @@
 
 #pragma once
 
-#ifndef USE_PRECOMPILED_HEADERS
-#include <cstdint>
-#include <sstream>
-#endif
-
 struct apng_data
 {
     uint8_t* pdata;

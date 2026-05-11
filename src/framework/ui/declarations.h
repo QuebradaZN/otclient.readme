@@ -24,10 +24,6 @@
 
 #include <framework/global.h>
 
-#ifndef USE_PRECOMPILED_HEADERS
-#include <memory>
-#endif
-
 enum class DrawPoolType : uint8_t;
 enum FlagProp : uint64_t;
 enum class DisplayType : uint8_t;

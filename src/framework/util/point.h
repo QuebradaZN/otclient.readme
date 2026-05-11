@@ -22,15 +22,6 @@
 
 #pragma once
 
-#ifndef USE_PRECOMPILED_HEADERS
-#include <cmath>
-#include <cstddef>
-#include <istream>
-#include <ostream>
-
-#include <fmt/format.h>
-#endif
-
 template<class T>
 class TSize;
 
